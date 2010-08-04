@@ -38,6 +38,35 @@ def ReadonlyValue(name):
 
     return property(fget=_get_prop)
 
+def Reference(name, cls):
+    def _get_prop(self):
+        if not isinstance(self[name], cls):
+            self[name] = cls(self[name])
+        return self[name]
+
+    def _set_prop(self, value):
+        if not isinstance(value, cls):
+            value = cls(value)
+        self[name] = value
+
+    return property(fget=_get_prop, fset=_set_prop)
+
+def ReferenceList(name, cls):
+    """
+    A list of references.  This will convert each element of the list to cls if
+    it is not already.
+    """
+    def _get_prop(self):
+        # Could be a performance issue since we're regenerating the list every
+        # time the property is accessed.
+        self[name] = [cls(val) for val in self[name]]
+        return self[name]
+
+    def _set_prop(self, values):
+        self[name] = [cls(val) for val in values]
+
+    return property(fget=_get_prop, fset=_set_prop)
+        
 
 class Document(dict):
     id = ReadonlyValue('_id')
