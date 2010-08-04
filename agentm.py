@@ -57,6 +57,8 @@ def ReferenceList(name, cls):
     it is not already.
     """
     def _get_prop(self):
+        if self.get(name, None) is None:
+            self[name] = []
         # Could be a performance issue since we're regenerating the list every
         # time the property is accessed.
         self[name] = [cls(val) for val in self[name]]
