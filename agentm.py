@@ -1,3 +1,5 @@
+from pymongo.son_manipulator import SONManipulator
+
 __version__ = '0.1.0'
 
 class ValidationFailedError(Exception):
@@ -69,8 +71,18 @@ def ReferenceList(name, cls):
 
     return property(fget=_get_prop, fset=_set_prop)
         
+doc_registry = {}
 
 class Document(dict):
+    abstract = True
+    class __metaclass__(type):
+        def __new__(cls, name, bases, dict):
+            abstract = dict.pop('abstract', False)
+            new_cls = type.__new__(cls, name, bases, dict)
+            if not abstract:
+                doc_registry[new_cls.collection] = new_cls
+            return new_cls
+
     id = ReadonlyValue('_id')
     def __new__(cls, *args, **kwargs):
         instance = dict.__new__(cls, *args, **kwargs)
@@ -81,4 +93,13 @@ class Document(dict):
             instance.collection = instance['_ns']
         return instance
 
+class DocumentSONManipulator(SONManipulator):
+    def willcopy(self):
+        return True
 
+    def transform_outgoing(self, son, collection):
+        cls = doc_registry.get(collection.name)
+        if cls:
+            return cls(son)
+        else:
+            return son
