@@ -53,23 +53,38 @@ def Reference(name, cls):
 
     return property(fget=_get_prop, fset=_set_prop)
 
+
 def ReferenceList(name, cls):
     """
     A list of references.  This will convert each element of the list to cls if
     it is not already.
     """
+    names = name.split(".")
+    last_name = names[-1]
+    
+    def _get(self):
+        cursor = self
+        for piece in names[:-1]:
+            cursor = cursor.setdefault(piece, {})
+        return cursor, cursor.get(last_name, [])
+
     def _get_prop(self):
-        if self.get(name, None) is None:
-            self[name] = []
-        # Could be a performance issue since we're regenerating the list every
-        # time the property is accessed.
-        self[name] = [cls(val) for val in self[name]]
-        return self[name]
+        cursor, value = _get(self)
 
-    def _set_prop(self, values):
-        self[name] = [cls(val) for val in values]
+        for index, val in enumerate(value):
+            if not isinstance(val, cls):
+                value[index] = cls(val)
 
-    return property(fget=_get_prop, fset=_set_prop)
+        return value
+
+    # NOTE: removing set for now, because of object identity issues
+    # and it's not strictly necessary for us atm
+    # def _set_prop(self, values):
+    #     cursor, value = _get()
+    #     cursor[last_name]
+    #     self[name] = [cls(val) for val in values]
+
+    return property(fget=_get_prop) #, fset=_set_prop)
         
 doc_registry = {}
 
@@ -84,6 +99,7 @@ class Document(dict):
             return new_cls
 
     id = ReadonlyValue('_id')
+    
     def __new__(cls, *args, **kwargs):
         instance = dict.__new__(cls, *args, **kwargs)
         collection = getattr(cls, 'collection', None)
@@ -103,3 +119,5 @@ class DocumentSONManipulator(SONManipulator):
             return cls(son)
         else:
             return son
+            
+
