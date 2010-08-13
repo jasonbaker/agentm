@@ -9,7 +9,7 @@ def WritableValue(name, validator=None):
     """ A value in the dictionary that has been exposed as both readable and
     writable.
 
-    :param name: The key of the dictionary to be exposed.  
+    :param name: The key of the dictionary to be exposed.
 
     :param validator: If given, a function that will return True if the value is valid.  If this
         function returns false, a :class:`~ValidationFailedError` will be raised.
@@ -17,7 +17,7 @@ def WritableValue(name, validator=None):
 
     def _get_prop(self):
         return self[name]
-    
+
     if validator:
         def _set_prop(self, value):
             if not validator(value):
@@ -61,12 +61,12 @@ def ReferenceList(name, cls):
     """
     names = name.split(".")
     last_name = names[-1]
-    
+
     def _get(self):
         cursor = self
         for piece in names[:-1]:
             cursor = cursor.setdefault(piece, {})
-        return cursor, cursor.get(last_name, [])
+        return cursor, cursor.setdefault(last_name, [])
 
     def _get_prop(self):
         cursor, value = _get(self)
@@ -85,7 +85,7 @@ def ReferenceList(name, cls):
     #     self[name] = [cls(val) for val in values]
 
     return property(fget=_get_prop) #, fset=_set_prop)
-        
+
 doc_registry = {}
 
 class Document(dict):
@@ -99,7 +99,7 @@ class Document(dict):
             return new_cls
 
     id = ReadonlyValue('_id')
-    
+
     def __new__(cls, *args, **kwargs):
         instance = dict.__new__(cls, *args, **kwargs)
         collection = getattr(cls, 'collection', None)
@@ -119,5 +119,5 @@ class DocumentSONManipulator(SONManipulator):
             return cls(son)
         else:
             return son
-            
+
 
