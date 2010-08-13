@@ -95,7 +95,13 @@ class Document(dict):
             abstract = dict.pop('abstract', False)
             new_cls = type.__new__(cls, name, bases, dict)
             if not abstract:
-                doc_registry[new_cls.collection] = new_cls
+                if new_cls.collection not in doc_registry:
+                    doc_registry[new_cls.collection] = new_cls
+                else:
+                    current_cls = doc_registry[new_cls.collection]
+                    if issubclass(current_cls, new_cls):
+                        doc_registry[new_cls.collection] = new_cls
+
             return new_cls
 
     id = ReadonlyValue('_id')
@@ -109,6 +115,10 @@ class Document(dict):
             instance.collection = instance['_ns']
         return instance
 
+    @classmethod
+    def transform(cls, son):
+        return cls(son)
+
 class DocumentSONManipulator(SONManipulator):
     def willcopy(self):
         return True
@@ -116,8 +126,6 @@ class DocumentSONManipulator(SONManipulator):
     def transform_outgoing(self, son, collection):
         cls = doc_registry.get(collection.name)
         if cls:
-            return cls(son)
+            return cls.transform(son)
         else:
             return son
-
-
