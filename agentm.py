@@ -106,15 +106,6 @@ class Document(dict):
 
     id = ReadonlyValue('_id')
 
-    def __new__(cls, *args, **kwargs):
-        instance = dict.__new__(cls, *args, **kwargs)
-        collection = getattr(cls, 'collection', None)
-        if collection and not instance.get('_ns', None):
-            instance['_ns'] = collection
-        elif instance.get('_ns', None):
-            instance.collection = instance['_ns']
-        return instance
-
     @classmethod
     def transform(cls, son):
         return cls(son)
